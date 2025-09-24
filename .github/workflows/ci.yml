@@ -1,0 +1,251 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+env:
+  PYTHON_VERSION: "3.11"
+  POSTGRES_VERSION: "16"
+
+jobs:
+  lint:
+    name: Lint and Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+      
+      - name: Run Black formatter check
+        run: black --check .
+      
+      - name: Run isort import checker
+        run: isort --check-only .
+      
+      - name: Run Flake8 linter
+        run: flake8 .
+      
+      - name: Run MyPy type checker
+        run: mypy .
+
+  test:
+    name: Test Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+    
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: rcm_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/requirements*.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-${{ matrix.python-version }}-
+            ${{ runner.os }}-pip-
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+      
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client-${{ env.POSTGRES_VERSION }}
+      
+      - name: Wait for PostgreSQL
+        run: |
+          until pg_isready -h localhost -p 5432 -U test; do
+            echo "Waiting for PostgreSQL..."
+            sleep 1
+          done
+      
+      - name: Create required extensions
+        env:
+          PGPASSWORD: test
+        run: |
+          psql -h localhost -U test -d rcm_test -c "CREATE EXTENSION IF NOT EXISTS pgcrypto;"
+          psql -h localhost -U test -d rcm_test -c "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";"
+          psql -h localhost -U test -d rcm_test -c "CREATE EXTENSION IF NOT EXISTS vector;"
+      
+      - name: Run unit tests
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/rcm_test
+          TEST_DATABASE_URL: postgresql://test:test@localhost:5432/rcm_test
+        run: |
+          pytest tests/unit -v --cov=. --cov-report=xml --cov-report=html
+      
+      - name: Run integration tests
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/rcm_test
+          TEST_DATABASE_URL: postgresql://test:test@localhost:5432/rcm_test
+          RUN_INTEGRATION_TESTS: "1"
+        run: |
+          pytest tests/integration -v --cov=. --cov-report=xml --cov-report=html --cov-append
+      
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+
+  migration-test:
+    name: Test Database Migrations
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: rcm_migration_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+      
+      - name: Create required extensions
+        env:
+          PGPASSWORD: test
+        run: |
+          psql -h localhost -U test -d rcm_migration_test -c "CREATE EXTENSION IF NOT EXISTS pgcrypto;"
+          psql -h localhost -U test -d rcm_migration_test -c "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";"
+          psql -h localhost -U test -d rcm_migration_test -c "CREATE EXTENSION IF NOT EXISTS vector;"
+      
+      - name: Run migrations
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/rcm_migration_test
+        run: |
+          python run_migrations.py
+      
+      - name: Verify schema
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/rcm_migration_test
+        run: |
+          python run_migrations.py --verify-only
+      
+      - name: Test migration rollback
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/rcm_migration_test
+        run: |
+          alembic downgrade -1
+          alembic upgrade head
+
+  docker-build:
+    name: Test Docker Build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+          tags: rcm-schema:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      
+      - name: Test Docker image
+        run: |
+          docker run --rm rcm-schema:test python -c "import models; import schemas; print('Import test passed')"
+
+  validate-requirements:
+    name: Validate Requirements
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Check requirements files
+        run: |
+          # Check that requirements files exist
+          test -f requirements.txt || (echo "requirements.txt missing" && exit 1)
+          test -f requirements-dev.txt || (echo "requirements-dev.txt missing" && exit 1)
+      
+      - name: Check for security vulnerabilities
+        run: |
+          pip install safety
+          safety check --json || true  # Don't fail on vulnerabilities, just report
+      
+      - name: Check for outdated packages
+        run: |
+          pip install pip-review
+          pip-review --local --auto || true  # Just report, don't fail
