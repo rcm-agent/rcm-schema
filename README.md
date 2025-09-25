@@ -105,12 +105,12 @@ python init_db.py --no-sample-data
 
 To run migrations on an existing database:
 ```bash
-python run_migrations.py
+python -m rcm_schema.run_migrations
 ```
 
 To verify the schema without running migrations:
 ```bash
-python run_migrations.py --verify-only
+python -m rcm_schema.run_migrations --verify-only
 ```
 
 ## Schema Overview
@@ -259,7 +259,7 @@ await session.commit()
    ```
 5. Run migration:
    ```bash
-   python run_migrations.py
+   python -m rcm_schema.run_migrations
    ```
 
 ### Testing

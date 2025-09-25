@@ -5,7 +5,8 @@ import os
 import re
 from pathlib import Path
 
-migrations_dir = Path("alembic/versions")
+BASE_DIR = Path(__file__).parent
+migrations_dir = BASE_DIR / "alembic" / "versions"
 
 # Expected migration chain
 expected_chain = [

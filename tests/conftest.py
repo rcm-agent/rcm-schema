@@ -14,10 +14,12 @@ import asyncpg
 # Add parent directory to path
 import sys
 from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from models import Base
-from database import DatabaseManager
+PROJECT_ROOT = Path(__file__).parent.parent
+sys.path.insert(0, str(PROJECT_ROOT.parent))
+
+from rcm_schema.models import Base
+from rcm_schema.database import DatabaseManager
 
 
 # Test database URL - override with env var if needed

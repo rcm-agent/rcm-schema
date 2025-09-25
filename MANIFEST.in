@@ -1,0 +1,4 @@
+include rcm_schema/alembic.ini
+recursive-include rcm_schema/alembic *
+recursive-include rcm_schema/migrations *
+prune */__pycache__

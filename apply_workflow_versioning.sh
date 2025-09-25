@@ -21,6 +21,10 @@ echo -e "${BLUE}Workflow Versioning Migration${NC}"
 echo -e "${BLUE}============================================${NC}"
 echo ""
 
+# Resolve project directory
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ALEMBIC_CONFIG="${SCRIPT_DIR}/rcm_schema/alembic.ini"
+
 # Load environment variables
 if [ -f .env ]; then
     export $(cat .env | grep -v '^#' | xargs)
@@ -72,7 +76,7 @@ run_alembic() {
     echo -e "${BLUE}→ Running Alembic migration...${NC}"
     
     if command -v alembic &> /dev/null; then
-        if alembic upgrade head; then
+        if alembic -c "$ALEMBIC_CONFIG" upgrade head; then
             echo -e "${GREEN}  ✓ Alembic migration completed${NC}"
             return 0
         else
@@ -90,7 +94,7 @@ echo -e "${BLUE}Starting migration process...${NC}"
 echo ""
 
 # Step 1: Apply SQL migration
-if run_sql "add_workflow_versioning.sql" "Applying workflow versioning migration"; then
+if run_sql "${SCRIPT_DIR}/add_workflow_versioning.sql" "Applying workflow versioning migration"; then
     echo ""
     echo -e "${GREEN}✅ SQL migration completed successfully!${NC}"
 else

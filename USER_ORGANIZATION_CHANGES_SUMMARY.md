@@ -14,7 +14,7 @@
 - Handles upgrade and downgrade paths
 - Migrates existing data preserving relationships
 
-#### `/Users/seunghwanlee/rcm-schema/migrations/add_user_organization_table.sql`
+#### `/Users/seunghwanlee/rcm-schema/rcm_schema/migrations/add_user_organization_table.sql`
 - Direct SQL migration script
 - Can be used without Alembic
 - Includes rollback instructions in comments
@@ -55,7 +55,7 @@
    alembic upgrade head
    
    # Option 2: Using direct SQL
-   psql -U your_username -d your_database -f migrations/add_user_organization_table.sql
+   psql -U your_username -d your_database -f rcm_schema/migrations/add_user_organization_table.sql
    ```
 
 3. **Update application code** that references `user.org_id` to use the new relationship

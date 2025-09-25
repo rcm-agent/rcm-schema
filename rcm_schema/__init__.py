@@ -15,10 +15,7 @@ from .validators import (
     validate_database_compatibility_sync,
 )
 
-from .models import (
-    # Base
-    Base,
-    
+from .schemas import (
     # Enums
     OrgType,
     EndpointKind,
@@ -27,6 +24,11 @@ from .models import (
     TaskSignatureSource,
     JobStatus,
     UserRole,
+)
+
+from .models import (
+    # Base
+    Base,
     
     # Models
     Organization,

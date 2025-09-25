@@ -127,7 +127,7 @@ def primary_org_id(self):
 ### 7. Migration Files
 
 - **Alembic Migration**: `alembic/versions/009_add_user_organization_table.py`
-- **Direct SQL**: `migrations/add_user_organization_table.sql`
+- **Direct SQL**: `rcm_schema/migrations/add_user_organization_table.sql`
 - **Models**: Updated in `models.py`
 
 ### 8. Running the Migration
@@ -137,7 +137,7 @@ def primary_org_id(self):
 alembic upgrade head
 
 # Using direct SQL
-psql -U username -d database_name -f migrations/add_user_organization_table.sql
+psql -U username -d database_name -f rcm_schema/migrations/add_user_organization_table.sql
 ```
 
 ### 9. Rollback

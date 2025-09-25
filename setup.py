@@ -23,6 +23,8 @@ setup(
         "sqlalchemy>=2.0.0",
         "pydantic>=2.0.0",
         "asyncpg>=0.29.0",  # Required for async database operations
+        "pgvector>=0.2.4",  # Vector column support used in models
+        "psycopg2-binary>=2.9.9",  # Sync connection support for validators/scripts
     ],
     description="RCM Schema - Shared database models for RCM services",
     author="RCM Team",

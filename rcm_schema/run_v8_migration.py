@@ -12,6 +12,8 @@ from sqlalchemy import create_engine, text
 from alembic.config import Config
 from alembic import command
 
+BASE_DIR = Path(__file__).parent
+
 # Setup logging
 logging.basicConfig(
     level=logging.INFO,
@@ -112,7 +114,7 @@ def run_migration():
         
         # Step 4: Run Alembic migration
         logger.info("Running Alembic migration to V8...")
-        alembic_cfg = Config("alembic.ini")
+        alembic_cfg = Config(str(BASE_DIR / "alembic.ini"))
         alembic_cfg.set_main_option("sqlalchemy.url", DATABASE_URL)
         
         # Run migration

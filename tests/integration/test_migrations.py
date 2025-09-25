@@ -1,23 +1,27 @@
 """Integration tests for database migrations."""
-import pytest
 import asyncio
-import asyncpg
-import subprocess
 import os
+import subprocess
 from pathlib import Path
-from sqlalchemy import text, inspect
-from sqlalchemy.ext.asyncio import create_async_engine
-from alembic.config import Config
+
+import asyncpg
+import pytest
 from alembic import command
-from alembic.script import ScriptDirectory
+from alembic.config import Config
 from alembic.runtime.migration import MigrationContext
+from alembic.script import ScriptDirectory
+from sqlalchemy import inspect, text
+from sqlalchemy.ext.asyncio import create_async_engine
 
-# Add parent directory to path
+# Ensure repository root is on sys.path for package imports
 import sys
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from models import Base
-from database import DatabaseManager
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+PACKAGE_ROOT = PROJECT_ROOT / "rcm_schema"
+sys.path.insert(0, str(PROJECT_ROOT))
+
+from rcm_schema.database import DatabaseManager
+from rcm_schema.models import Base
 
 
 @pytest.mark.integration
@@ -34,9 +38,7 @@ class TestAlembicMigrations:
         else:
             url = test_database_url
         
-        # Get project root
-        project_root = Path(__file__).parent.parent.parent
-        alembic_ini = project_root / "alembic.ini"
+        alembic_ini = PACKAGE_ROOT / "alembic.ini"
         
         # Create config
         config = Config(str(alembic_ini))
@@ -45,10 +47,9 @@ class TestAlembicMigrations:
     
     def test_alembic_config_exists(self):
         """Test that Alembic configuration exists."""
-        project_root = Path(__file__).parent.parent.parent
-        assert (project_root / "alembic.ini").exists()
-        assert (project_root / "alembic" / "env.py").exists()
-        assert (project_root / "alembic" / "versions").exists()
+        assert (PACKAGE_ROOT / "alembic.ini").exists()
+        assert (PACKAGE_ROOT / "alembic" / "env.py").exists()
+        assert (PACKAGE_ROOT / "alembic" / "versions").exists()
     
     def test_migration_scripts_valid(self, alembic_config):
         """Test that all migration scripts are valid Python."""
@@ -190,8 +191,7 @@ class TestMigrationScript:
     
     def test_migration_script_exists(self):
         """Test that migration script exists and is executable."""
-        project_root = Path(__file__).parent.parent.parent
-        script_path = project_root / "run_migrations.py"
+        script_path = PACKAGE_ROOT / "run_migrations.py"
         
         assert script_path.exists()
         assert script_path.stat().st_mode & 0o111  # Check executable bit
@@ -199,8 +199,7 @@ class TestMigrationScript:
     @pytest.mark.asyncio
     async def test_migration_script_verify_only(self, test_database_url):
         """Test migration script in verify-only mode."""
-        project_root = Path(__file__).parent.parent.parent
-        script_path = project_root / "run_migrations.py"
+        script_path = PACKAGE_ROOT / "run_migrations.py"
         
         # Run script in verify-only mode
         env = os.environ.copy()
@@ -223,8 +222,7 @@ class TestMigrationScript:
         # Drop all tables first
         Base.metadata.drop_all(bind=sync_engine)
         
-        project_root = Path(__file__).parent.parent.parent
-        script_path = project_root / "run_migrations.py"
+        script_path = PACKAGE_ROOT / "run_migrations.py"
         
         # Run full migration
         env = os.environ.copy()
