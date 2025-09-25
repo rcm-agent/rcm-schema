@@ -3,14 +3,14 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock
 import asyncpg
 
-from validators import (
+from rcm_schema.validators import (
     parse_postgresql_version,
     validate_postgresql_version_async,
     validate_postgresql_version_sync,
     validate_extensions_async,
     validate_extensions_sync,
     validate_database_compatibility_async,
-    validate_database_compatibility_sync
+    validate_database_compatibility_sync,
 )
 
 

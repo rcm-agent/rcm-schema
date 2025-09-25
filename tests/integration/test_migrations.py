@@ -317,7 +317,7 @@ class TestMigrationPerformance:
     async def test_migration_with_data(self, async_session, alembic_config):
         """Test migrations work correctly with existing data."""
         # Insert some test data
-        from models import Organization, PortalType
+        from rcm_schema import Organization, PortalType
         
         # Create test organizations
         for i in range(100):

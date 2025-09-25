@@ -26,32 +26,68 @@ from .schemas import (
     UserRole,
 )
 
-from .models import (
-    # Base
-    Base,
-    
-    # Models
-    Organization,
-    PortalType,
-    IntegrationEndpoint,
-    TaskType,
-    FieldRequirement,
-    BatchJob,
-    BatchRow,
-    RcmState,
-    MacroState,
-    TaskSignature,
-    RcmTrace,
-    RcmTransition,
-    AppUser,
-    
-    # Workflow Models (V8)
-    UserWorkflow,
-    UserWorkflowNode,
-    UserWorkflowTransition,
-    WorkflowRevision,
-    MicroState,
-)
+# Import ORM modules explicitly so we can reconcile legacy and V8 schemas.
+try:  # New V8 schema (graph workflows, vector embeddings)
+    from . import models as _models_v8
+except ImportError:  # pragma: no cover - defensive guard if module renamed
+    _models_v8 = None
+
+try:  # Legacy schema still referenced by downstream services
+    from . import models_backup as _models_legacy
+except ImportError:  # pragma: no cover - should never happen in published package
+    _models_legacy = None
+
+
+def _get_model(name: str, *, prefer: str = "legacy"):
+    """Locate a model class by name, preferring the requested schema set."""
+
+    sources = []
+    if prefer == "v8":
+        sources = [_models_v8, _models_legacy]
+    else:
+        sources = [_models_legacy, _models_v8]
+
+    for module in sources:
+        if module is None:
+            continue
+        if hasattr(module, name):
+            return getattr(module, name)
+
+    raise AttributeError(f"rcm_schema: model '{name}' not found in legacy or V8 modules")
+
+
+# Expose declarative base classes so consumers can select the appropriate one.
+LegacyBase = _get_model("Base", prefer="legacy") if _models_legacy else None
+V8Base = _get_model("Base", prefer="v8") if _models_v8 else None
+
+# Default Base remains the legacy version for compatibility with existing
+# services that still operate on portal/state tables.
+Base = LegacyBase or V8Base
+
+# Core legacy models (portal + automation state)
+Organization = _get_model("Organization", prefer="legacy")
+PortalType = _get_model("PortalType", prefer="legacy")
+IntegrationEndpoint = _get_model("IntegrationEndpoint", prefer="legacy")
+TaskType = _get_model("TaskType", prefer="legacy")
+FieldRequirement = _get_model("FieldRequirement", prefer="legacy")
+BatchJob = _get_model("BatchJob", prefer="legacy")
+BatchRow = _get_model("BatchRow", prefer="legacy")
+TaskSignature = _get_model("TaskSignature", prefer="legacy")
+RcmState = _get_model("RcmState", prefer="legacy")
+MacroState = _get_model("MacroState", prefer="legacy")
+RcmTrace = _get_model("RcmTrace", prefer="legacy")
+RcmTransition = _get_model("RcmTransition", prefer="legacy")
+AppUser = _get_model("AppUser", prefer="legacy")
+RequirementChangelog = _get_model("RequirementChangelog", prefer="legacy")
+OrgRequirementPolicy = _get_model("OrgRequirementPolicy", prefer="legacy")
+PayerRequirement = _get_model("PayerRequirement", prefer="legacy")
+
+# V8 workflow models (graph-based workflows, microstates)
+UserWorkflow = _get_model("UserWorkflow", prefer="v8")
+UserWorkflowNode = _get_model("UserWorkflowNode", prefer="v8")
+UserWorkflowTransition = _get_model("UserWorkflowTransition", prefer="v8")
+WorkflowRevision = _get_model("WorkflowRevision", prefer="v8")
+MicroState = _get_model("MicroState", prefer="v8")
 
 from .schemas import (
     # Enums (re-exported for API use)
@@ -169,6 +205,8 @@ __version__ = "0.1.0"
 __all__ = [
     # Base
     "Base",
+    "LegacyBase",
+    "V8Base",
     
     # Database enums
     "OrgType",
@@ -193,6 +231,9 @@ __all__ = [
     "RcmTrace",
     "RcmTransition",
     "AppUser",
+    "RequirementChangelog",
+    "OrgRequirementPolicy",
+    "PayerRequirement",
     
     # Workflow Models (V8)
     "UserWorkflow",

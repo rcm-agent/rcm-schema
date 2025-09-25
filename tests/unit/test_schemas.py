@@ -4,7 +4,7 @@ from uuid import uuid4
 from datetime import datetime
 from pydantic import ValidationError
 
-from schemas import (
+from rcm_schema.schemas import (
     # Organization schemas
     OrganizationCreate, OrganizationUpdate, Organization,
     # Portal Type schemas

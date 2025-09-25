@@ -4,11 +4,20 @@ from uuid import uuid4
 from datetime import datetime
 from decimal import Decimal
 
-from models import (
-    Organization, PortalType, IntegrationEndpoint,
-    TaskType, FieldRequirement, BatchJob, BatchRow,
-    RcmState, MacroState, TaskSignature, RcmTrace,
-    RcmTransition, AppUser
+from rcm_schema import (
+    Organization,
+    PortalType,
+    IntegrationEndpoint,
+    TaskType,
+    FieldRequirement,
+    BatchJob,
+    BatchRow,
+    RcmState,
+    MacroState,
+    TaskSignature,
+    RcmTrace,
+    RcmTransition,
+    AppUser,
 )
 
 

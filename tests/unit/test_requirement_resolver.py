@@ -5,11 +5,16 @@ from datetime import date
 from uuid import uuid4
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from requirement_resolver import (
-    RequirementResolver, RequirementSet, ValidationResult, PolicyType
+from rcm_schema.requirement_resolver import (
+    RequirementResolver,
+    RequirementSet,
+    ValidationResult,
+    PolicyType,
 )
-from models import (
-    PayerRequirement, OrgRequirementPolicy, IntegrationEndpoint
+from rcm_schema import (
+    PayerRequirement,
+    OrgRequirementPolicy,
+    IntegrationEndpoint,
 )
 
 

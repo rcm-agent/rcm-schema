@@ -108,6 +108,10 @@ class Organization(Base):
     user_associations = relationship('UserOrganization', back_populates='organization', cascade='all, delete-orphan')
     traces = relationship('RcmTrace', back_populates='organization', cascade='all, delete-orphan')
 
+    def __init__(self, **kwargs):
+        kwargs.setdefault('org_id', uuid4())
+        super().__init__(**kwargs)
+
 class PortalType(Base):
     """Portal type catalog table."""
     __tablename__ = 'portal_type'
@@ -261,7 +265,11 @@ class RcmState(Base):
     
     # Relationships
     portal = relationship('IntegrationEndpoint', back_populates='states')
-    macro_state = relationship('MacroState', back_populates='states')
+    macro_state = relationship(
+        'MacroState',
+        back_populates='states',
+        foreign_keys=[macro_state_id],
+    )
     alias_state = relationship('RcmState', remote_side=[state_id])
     from_transitions = relationship('RcmTransition', foreign_keys='RcmTransition.from_state', back_populates='from_state_obj', cascade='all, delete-orphan')
     to_transitions = relationship('RcmTransition', foreign_keys='RcmTransition.to_state', back_populates='to_state_obj', cascade='all, delete-orphan')
@@ -309,10 +317,22 @@ class TaskSignature(Base, TimestampMixin):
             "(portal_id IS NOT NULL)::int + (portal_type_id IS NOT NULL)::int = 1",
             name="task_signature_xor_check"
         ),
-        UniqueConstraint('portal_id', 'domain', 'action', 
-                         postgresql_where=text('portal_id IS NOT NULL')),
-        UniqueConstraint('portal_type_id', 'domain', 'action',
-                         postgresql_where=text('portal_type_id IS NOT NULL')),
+        Index(
+            'uq_task_signature_portal',
+            'portal_id',
+            'domain',
+            'action',
+            unique=True,
+            postgresql_where=text('portal_id IS NOT NULL'),
+        ),
+        Index(
+            'uq_task_signature_portal_type',
+            'portal_type_id',
+            'domain',
+            'action',
+            unique=True,
+            postgresql_where=text('portal_type_id IS NOT NULL'),
+        ),
     )
 
 class RcmTrace(Base, OrgContextMixin):
@@ -385,8 +405,13 @@ class UserOrganization(Base, TimestampMixin):
         Index('idx_user_organization_user_id', 'user_id'),
         Index('idx_user_organization_org_id', 'org_id'),
         Index('idx_user_organization_active', 'is_active'),
-        UniqueConstraint('user_id', 'is_primary', postgresql_where=text('is_primary = true'), 
-                        name='uq_one_primary_org_per_user'),
+        Index(
+            'uq_one_primary_org_per_user',
+            'user_id',
+            'is_primary',
+            unique=True,
+            postgresql_where=text('is_primary = true'),
+        ),
     )
 
 # Create indexes for vector similarity search
@@ -502,7 +527,7 @@ class CredentialAccessLog(Base):
     user_agent = Column(Text, nullable=True)
     success = Column(Boolean, nullable=False, default=True)
     error_message = Column(Text, nullable=True)
-    metadata = Column(JSONB, nullable=True)  # Additional context
+    metadata_ = Column('metadata', JSONB, nullable=True)  # Additional context
     
     __table_args__ = (
         CheckConstraint(

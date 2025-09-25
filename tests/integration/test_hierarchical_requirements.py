@@ -7,12 +7,17 @@ from uuid import uuid4
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from models import (
-    Organization, PortalType, IntegrationEndpoint, TaskType,
-    PayerRequirement, OrgRequirementPolicy, RequirementChangelog,
-    AppUser
+from rcm_schema import (
+    Organization,
+    PortalType,
+    IntegrationEndpoint,
+    TaskType,
+    PayerRequirement,
+    OrgRequirementPolicy,
+    RequirementChangelog,
+    AppUser,
 )
-from requirement_resolver import RequirementResolver, PolicyType
+from rcm_schema.requirement_resolver import RequirementResolver, PolicyType
 
 
 @pytest.mark.asyncio

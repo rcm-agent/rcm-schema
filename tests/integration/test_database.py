@@ -5,14 +5,22 @@ from sqlalchemy import select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 
-from models import (
-    Organization, PortalType, IntegrationEndpoint,
-    TaskType, FieldRequirement, BatchJob, AppUser
+from rcm_schema import (
+    Organization,
+    PortalType,
+    IntegrationEndpoint,
+    TaskType,
+    FieldRequirement,
+    BatchJob,
+    AppUser,
+    RcmState,
 )
-from schemas import (
-    OrganizationCreate, TaskTypeCreate, BatchJobCreate
+from rcm_schema.schemas import (
+    OrganizationCreate,
+    TaskTypeCreate,
+    BatchJobCreate,
 )
-from database import DatabaseManager
+from rcm_schema.database import DatabaseManager
 
 
 @pytest.mark.integration
@@ -241,7 +249,6 @@ class TestVectorOperations:
     
     async def test_create_rcm_state_with_vectors(self, async_session):
         """Test creating RCM state with vector embeddings."""
-        from models import RcmState, IntegrationEndpoint, PortalType, Organization
         import numpy as np
         
         # Setup portal
