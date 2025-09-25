@@ -1,9 +1,23 @@
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
+
+package_files = [
+    "alembic.ini",
+    "alembic/env.py",
+    "alembic/env_async.py",
+    "alembic/script.py.mako",
+    "alembic/versions/*.py",
+    "alembic/versions/*.sql",
+    "migrations/*.py",
+    "migrations/*.sql",
+    "migrations/scripts/*.sql",
+]
 
 setup(
     name="rcm-schema",
     version="0.1.0",
     packages=find_packages(),
+    include_package_data=True,
+    package_data={"rcm_schema": package_files},
     python_requires=">=3.11",
     install_requires=[
         "sqlalchemy>=2.0.0",
