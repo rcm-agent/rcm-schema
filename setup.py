@@ -8,6 +8,7 @@ setup(
     install_requires=[
         "sqlalchemy>=2.0.0",
         "pydantic>=2.0.0",
+        "asyncpg>=0.29.0",  # Required for async database operations
     ],
     description="RCM Schema - Shared database models for RCM services",
     author="RCM Team",
