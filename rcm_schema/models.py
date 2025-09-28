@@ -648,10 +648,35 @@ class DataSourceWorkbook(Base, TimestampMixin):
 workflow_data_sources = Base.metadata.tables.get('workflow_data_sources')
 if not workflow_data_sources:
     from sqlalchemy import Table
-    workflow_data_sources = Table('workflow_data_sources', Base.metadata,
-        Column('workflow_id', UUID(as_uuid=True), ForeignKey('user_workflow.workflow_id', ondelete='CASCADE'), primary_key=True),
-        Column('data_source_id', UUID(as_uuid=True), ForeignKey('data_sources.data_source_id', ondelete='CASCADE'), primary_key=True),
-        Column('created_at', DateTime(timezone=True), nullable=False, server_default=func.now())
+    workflow_data_sources = Table(
+        'workflow_data_sources',
+        Base.metadata,
+        Column(
+            'workflow_id',
+            UUID(as_uuid=True),
+            ForeignKey('user_workflow.workflow_id', ondelete='CASCADE'),
+            primary_key=True,
+        ),
+        Column(
+            'org_id',
+            UUID(as_uuid=True),
+            ForeignKey('organizations.org_id', ondelete='CASCADE'),
+            primary_key=True,
+        ),
+        Column(
+            'data_source_id',
+            UUID(as_uuid=True),
+            ForeignKey('data_sources.data_source_id', ondelete='CASCADE'),
+            nullable=False,
+        ),
+        Column('connected_at', DateTime(timezone=True), nullable=False, server_default=func.now()),
+        Column('updated_at', DateTime(timezone=True), nullable=False, server_default=func.now()),
+        Column('output_config', JSONB, nullable=True),
+        Column('variables', JSONB, nullable=True),
+        Column('metadata', JSONB, nullable=True),
+        Column('created_at', DateTime(timezone=True), nullable=False, server_default=func.now()),
+        Index('idx_workflow_data_sources_org', 'org_id', 'updated_at'),
+        Index('idx_workflow_data_sources_data_source', 'data_source_id', 'updated_at'),
     )
 
 
